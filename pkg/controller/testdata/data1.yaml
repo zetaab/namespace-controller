@@ -1,0 +1,14 @@
+maintainers:
+- team: DevOps
+  value: kaas
+  namespaces:
+  - foo
+  - bar
+- team: prod1
+  value: prod1
+  namespaces:
+  - '.*-prod'
+- team: dev1
+  value: dev1
+  namespaces:
+  - '.*'
