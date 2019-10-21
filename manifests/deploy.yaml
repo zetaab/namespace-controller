@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: namespace-controller
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: namespace-controller
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: namespace-controller
+  labels:
+    app.kubernetes.io/name: namespace-controller
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs:
+  - list
+  - watch
+  - patch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: namespace-controller
+  labels:
+    app.kubernetes.io/name: namespace-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: namespace-controller
+subjects:
+- kind: ServiceAccount
+  name: namespace-controller
+  namespace: kube-system
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: namespace-controller
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: namespace-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: namespace-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: namespace-controller
+    spec:
+      serviceAccountName: namespace-controller
+      volumes:
+      - name: namespace-configuration
+        configMap:
+          name: namespace-configuration
+      containers:
+      - name: namespace-controller
+        image: elisaoyj/namespace-controller:latest
+        volumeMounts:
+        - name: namespace-configuration
+          mountPath: /code/config
+        env:
+        - name: CONFIG
+          value: /code/config/config.yaml
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: namespace-configuration
+  labels:
+    app.kubernetes.io/name: namespace-controller
+data:
+  config.yaml: |-
+    maintainers:
+    - team: DevOps
+      value: kaas
+      namespaces:
+      - foo
+      - bar
+    - team: prod1
+      value: prod1
+      namespaces:
+      - '.*-prod'
+    - team: dev1
+      value: dev1
+      namespaces:
+      - '.*'
