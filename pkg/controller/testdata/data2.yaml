@@ -1,6 +1,7 @@
 maintainers:
 - team: DevOps
-  value: kaas
+  labels:
+    maintainer: kaas
   namespaces:
   - foo
   - bar

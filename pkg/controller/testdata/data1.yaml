@@ -1,14 +1,18 @@
 maintainers:
 - team: DevOps
-  value: kaas
+  labels:
+    maintainer: kaas
+    foo: bar
   namespaces:
   - foo
   - bar
 - team: prod1
-  value: prod1
+  labels:
+    maintainer: prod1
   namespaces:
   - '.*-prod'
 - team: dev1
-  value: dev1
+  labels:
+    maintainer: dev1
   namespaces:
   - '.*'

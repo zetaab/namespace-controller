@@ -13,27 +13,25 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-const (
-	teamLabelKey = "maintainer"
-)
-
 func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 	team, err := FindTeam(ns.Name, c.config)
 	if err != nil {
 		log.Printf("could not find team '%+v'", err)
 		return
 	}
-	val, ok := ns.Labels[teamLabelKey]
-	if !ok || val != team {
-		log.Printf("Updating namespace %s label %s to value %s", ns.Name, teamLabelKey, team)
-		err := c.patchNameSpace(ns, team)
-		if err != nil {
-			log.Printf("Got error while patching namespace %v", err)
+	for labelKey, labelValue := range team.Labels {
+		val, ok := ns.Labels[labelKey]
+		if !ok || val != labelValue {
+			log.Printf("Updating namespace %s label %s to value %s", ns.Name, labelKey, labelValue)
+			err := c.patchNameSpace(ns, labelKey, labelValue)
+			if err != nil {
+				log.Printf("Got error while patching namespace %v", err)
+			}
 		}
 	}
 }
 
-func (c *Controller) patchNameSpace(ns *v1.Namespace, value string) error {
+func (c *Controller) patchNameSpace(ns *v1.Namespace, label string, value string) error {
 	oldJSON, err := json.Marshal(ns)
 	if err != nil {
 		return err
@@ -42,7 +40,7 @@ func (c *Controller) patchNameSpace(ns *v1.Namespace, value string) error {
 	if len(ns.Labels) == 0 {
 		ns.Labels = make(map[string]string)
 	}
-	ns.Labels[teamLabelKey] = value
+	ns.Labels[label] = value
 
 	newJSON, err := json.Marshal(ns)
 	if err != nil {
@@ -64,16 +62,16 @@ func (c *Controller) patchNameSpace(ns *v1.Namespace, value string) error {
 }
 
 // FindTeam finds correct team for namespace
-func FindTeam(name string, config *Config) (string, error) {
+func FindTeam(name string, config *Config) (*Team, error) {
 	for _, team := range config.Maintainers {
 		for _, ns := range team.NameSpaces {
 			match, err := regexp.MatchString(fmt.Sprintf("^%s$", ns), name)
 			if err == nil && match {
-				return team.Value, nil
+				return &team, nil
 			}
 		}
 	}
-	return "", fmt.Errorf("Team '%s' not found", name)
+	return nil, fmt.Errorf("Team '%s' not found", name)
 }
 
 func makeConfig(path string) (*Config, error) {

@@ -2,9 +2,9 @@ package controller
 
 // Team ...
 type Team struct {
-	Team       string   `yaml:"team"`
-	Value      string   `yaml:"value"`
-	NameSpaces []string `yaml:"namespaces"`
+	Team       string            `yaml:"team"`
+	Labels     map[string]string `yaml:"labels"`
+	NameSpaces []string          `yaml:"namespaces"`
 }
 
 // Config ...
