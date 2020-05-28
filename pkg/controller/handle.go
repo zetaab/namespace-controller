@@ -10,10 +10,45 @@ import (
 	"github.com/mattbaird/jsonpatch"
 	"gopkg.in/yaml.v2"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
+	if !Contains(c.config.AdminNamespaces, ns.Name) {
+		_, err := c.kclient.CoreV1().LimitRanges(ns.Name).Get("default-limits", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			limitRange := &v1.LimitRange{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "default-limits",
+				},
+				Spec: v1.LimitRangeSpec{
+					Limits: []v1.LimitRangeItem{
+						{
+							Type: v1.LimitTypeContainer,
+							Default: v1.ResourceList{
+								v1.ResourceCPU:    resource.MustParse("200m"),
+								v1.ResourceMemory: resource.MustParse("100Mi"),
+							},
+							DefaultRequest: v1.ResourceList{
+								v1.ResourceCPU:    resource.MustParse("50m"),
+								v1.ResourceMemory: resource.MustParse("100Mi"),
+							},
+						},
+					},
+				},
+			}
+			_, errCreate := c.kclient.CoreV1().LimitRanges(ns.Name).Create(limitRange)
+			if errCreate != nil {
+				log.Printf("could not create limit-range '%+v'", errCreate)
+			}
+		} else if err != nil {
+			log.Printf("could not fetch limit-ranges '%+v'", err)
+		}
+	}
+
 	team, err := FindTeam(ns.Name, c.config)
 	if err != nil {
 		log.Printf("could not find team '%+v'", err)
@@ -85,4 +120,14 @@ func makeConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	return config, nil
+}
+
+// Contains is checking does array contain single word
+func Contains(array []string, word string) bool {
+	for _, item := range array {
+		if item == word {
+			return true
+		}
+	}
+	return false
 }
