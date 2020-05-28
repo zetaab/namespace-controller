@@ -9,5 +9,6 @@ type Team struct {
 
 // Config ...
 type Config struct {
-	Maintainers []Team `yaml:"maintainers"`
+	Maintainers     []Team   `yaml:"maintainers"`
+	AdminNamespaces []string `yaml:"adminnamespaces"`
 }
