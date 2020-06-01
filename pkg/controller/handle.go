@@ -20,6 +20,24 @@ func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 	if !Contains(c.config.AdminNamespaces, ns.Name) {
 		_, err := c.kclient.CoreV1().LimitRanges(ns.Name).Get("default-limits", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
+			// default values which can be overriden by config
+			limitCPU := "200m"
+			limitMemory := "100Mi"
+			requestCPU := "25m"
+			requestMemory := "100Mi"
+			if c.config.LimitCPU != "" {
+				limitCPU = c.config.LimitCPU
+			}
+			if c.config.LimitMemory != "" {
+				limitMemory = c.config.LimitMemory
+			}
+			if c.config.RequestCPU != "" {
+				requestCPU = c.config.RequestCPU
+			}
+			if c.config.RequestMemory != "" {
+				requestMemory = c.config.RequestMemory
+			}
+
 			limitRange := &v1.LimitRange{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "default-limits",
@@ -29,12 +47,12 @@ func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 						{
 							Type: v1.LimitTypeContainer,
 							Default: v1.ResourceList{
-								v1.ResourceCPU:    resource.MustParse("200m"),
-								v1.ResourceMemory: resource.MustParse("100Mi"),
+								v1.ResourceCPU:    resource.MustParse(limitCPU),
+								v1.ResourceMemory: resource.MustParse(limitMemory),
 							},
 							DefaultRequest: v1.ResourceList{
-								v1.ResourceCPU:    resource.MustParse("50m"),
-								v1.ResourceMemory: resource.MustParse("100Mi"),
+								v1.ResourceCPU:    resource.MustParse(requestCPU),
+								v1.ResourceMemory: resource.MustParse(requestMemory),
 							},
 						},
 					},
