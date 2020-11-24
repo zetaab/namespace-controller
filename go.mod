@@ -1,6 +1,6 @@
 module github.com/ElisaOyj/namespace-controller
 
-go 1.14
+go 1.15
 
 replace k8s.io/api => k8s.io/api v0.0.0-20190819141258-3544db3b9e44
 
