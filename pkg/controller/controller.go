@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"log"
 	"sync"
 	"time"
@@ -39,13 +40,14 @@ func (c *Controller) Run(stopCh <-chan struct{}, wg *sync.WaitGroup) {
 // NewNamespaceWatcher creates a new nsController
 func NewNamespaceWatcher(kclient *kubernetes.Clientset, configFile string) *Controller {
 	watcher := &Controller{}
+	ctx := context.Background()
 	nsInformer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return kclient.CoreV1().Namespaces().List(options)
+				return kclient.CoreV1().Namespaces().List(ctx, options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return kclient.CoreV1().Namespaces().Watch(options)
+				return kclient.CoreV1().Namespaces().Watch(ctx, options)
 			},
 		},
 		&v1.Namespace{},
