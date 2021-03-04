@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -17,8 +18,9 @@ import (
 )
 
 func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
+	ctx := context.Background()
 	if !Contains(c.config.AdminNamespaces, ns.Name) {
-		_, err := c.kclient.CoreV1().LimitRanges(ns.Name).Get("default-limits", metav1.GetOptions{})
+		_, err := c.kclient.CoreV1().LimitRanges(ns.Name).Get(ctx, "default-limits", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			// default values which can be overriden by config
 			limitCPU := "200m"
@@ -58,7 +60,7 @@ func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 					},
 				},
 			}
-			_, errCreate := c.kclient.CoreV1().LimitRanges(ns.Name).Create(limitRange)
+			_, errCreate := c.kclient.CoreV1().LimitRanges(ns.Name).Create(ctx, limitRange, metav1.CreateOptions{})
 			if errCreate != nil {
 				log.Printf("could not create limit-range '%+v'", errCreate)
 			}
@@ -76,7 +78,7 @@ func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 		val, ok := ns.Labels[labelKey]
 		if !ok || val != labelValue {
 			log.Printf("Updating namespace %s label %s to value %s", ns.Name, labelKey, labelValue)
-			err := c.patchNameSpace(ns, labelKey, labelValue)
+			err := c.patchNameSpace(ctx, ns, labelKey, labelValue)
 			if err != nil {
 				log.Printf("Got error while patching namespace %v", err)
 			}
@@ -84,7 +86,7 @@ func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 	}
 }
 
-func (c *Controller) patchNameSpace(ns *v1.Namespace, label string, value string) error {
+func (c *Controller) patchNameSpace(ctx context.Context, ns *v1.Namespace, label string, value string) error {
 	oldJSON, err := json.Marshal(ns)
 	if err != nil {
 		return err
@@ -110,7 +112,7 @@ func (c *Controller) patchNameSpace(ns *v1.Namespace, label string, value string
 		return err
 	}
 
-	_, err = c.kclient.CoreV1().Namespaces().Patch(ns.Name, types.JSONPatchType, pb)
+	_, err = c.kclient.CoreV1().Namespaces().Patch(ctx, ns.Name, types.JSONPatchType, pb, metav1.PatchOptions{})
 	return err
 }
 
