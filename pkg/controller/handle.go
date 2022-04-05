@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"regexp"
+	"strings"
 
 	"github.com/mattbaird/jsonpatch"
 	"gopkg.in/yaml.v2"
@@ -75,15 +76,33 @@ func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 		return
 	}
 	for labelKey, labelValue := range team.Labels {
-		val, ok := ns.Labels[labelKey]
-		if !ok || val != labelValue {
-			log.Printf("Updating namespace %s label %s to value %s", ns.Name, labelKey, labelValue)
-			err := c.patchNameSpace(ctx, ns, labelKey, labelValue)
+		newValue := handleLabels(ns, labelKey, labelValue)
+		if len(newValue) > 0 {
+			err := c.patchNameSpace(ctx, ns, labelKey, newValue)
 			if err != nil {
 				log.Printf("Got error while patching namespace %v", err)
 			}
 		}
 	}
+}
+
+func getDefaultValue(labelValue string) string {
+	return strings.Split(labelValue, ",")[0]
+}
+
+func handleLabels(ns *v1.Namespace, key string, labelValues string) string {
+	newValue := getDefaultValue(labelValues)
+	val, ok := ns.Labels[key]
+	if !ok {
+		log.Printf("adding label %s with value %s to namespace %s", key, newValue, ns.Name)
+		return newValue
+	}
+	allowedValues := strings.Split(labelValues, ",")
+	if !Contains(allowedValues, val) {
+		log.Printf("updating label %s to value %s in namespace %s. Not allowed value %s", key, newValue, ns.Name, val)
+		return newValue
+	}
+	return ""
 }
 
 func (c *Controller) patchNameSpace(ctx context.Context, ns *v1.Namespace, label string, value string) error {
