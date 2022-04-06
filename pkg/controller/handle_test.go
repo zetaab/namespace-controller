@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type findTest struct {
@@ -75,7 +77,92 @@ func TestFindTeam(t *testing.T) {
 		team, err := FindTeam(test.NSName, config)
 		assert.Equal(t, test.Pass2, err == nil, "Failed test '%s' expected %v got %v (%v)", test.Name, test.Pass2, err == nil, err)
 		if team != nil {
-			assert.Equal(t, test.Labels, team.Labels, "Failed test '%s' expected %v got %v", test.Name, test.Labels, team.Labels)
+			assert.Equal(t, test.Labels, team.Labels, "Failed test '%s'", test.Name)
 		}
+	}
+}
+
+type handleTest struct {
+	Name   string
+	NS     *v1.Namespace
+	Key    string
+	Opt    string
+	Result string
+}
+
+func TestHandle(t *testing.T) {
+	tests := []handleTest{
+		{
+			Name: "add new label",
+			NS: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "test",
+					Labels: map[string]string{},
+				},
+			},
+			Key:    "foo",
+			Opt:    "bar",
+			Result: "bar",
+		},
+		{
+			Name: "existing label",
+			NS: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"foo": "bar",
+					},
+				},
+			},
+			Key:    "foo",
+			Opt:    "bar",
+			Result: "",
+		},
+		{
+			Name: "not allowed value",
+			NS: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"foo": "bar2",
+					},
+				},
+			},
+			Key:    "foo",
+			Opt:    "bar",
+			Result: "bar",
+		},
+		{
+			Name: "AllowedValues valid",
+			NS: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"foo": "bar2",
+					},
+				},
+			},
+			Key:    "foo",
+			Opt:    "bar,bar2",
+			Result: "",
+		},
+		{
+			Name: "AllowedValues not valid",
+			NS: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"foo": "bar3",
+					},
+				},
+			},
+			Key:    "foo",
+			Opt:    "bar,bar2",
+			Result: "bar",
+		},
+	}
+	for _, test := range tests {
+		result := handleLabels(test.NS, test.Key, test.Opt)
+		assert.Equal(t, test.Result, result, "Failed test '%s'", test.Name)
 	}
 }
