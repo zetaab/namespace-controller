@@ -160,6 +160,21 @@ func TestHandle(t *testing.T) {
 			Opt:    "bar,bar2",
 			Result: "bar",
 		},
+
+		{
+			Name: "AllowedValues not valid",
+			NS: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"pod-security.kubernetes.io/enforce": "restricted",
+					},
+				},
+			},
+			Key:    "pod-security.kubernetes.io/warn",
+			Opt:    "restricted,baseline",
+			Result: "",
+		},
 	}
 	for _, test := range tests {
 		result := handleLabels(test.NS, test.Key, test.Opt)

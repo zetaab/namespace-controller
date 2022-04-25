@@ -19,7 +19,9 @@ import (
 )
 
 const (
+	// PodSecurityModeEnforcing ...
 	PodSecurityModeEnforcing   = "pod-security.kubernetes.io/enforce"
+	// PodSecurityModeWarn ...
 	PodSecurityModeWarn        = "pod-security.kubernetes.io/warn"
 )
 
