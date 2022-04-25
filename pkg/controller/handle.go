@@ -20,9 +20,9 @@ import (
 
 const (
 	// PodSecurityModeEnforcing ...
-	PodSecurityModeEnforcing   = "pod-security.kubernetes.io/enforce"
+	PodSecurityModeEnforcing = "pod-security.kubernetes.io/enforce"
 	// PodSecurityModeWarn ...
-	PodSecurityModeWarn        = "pod-security.kubernetes.io/warn"
+	PodSecurityModeWarn = "pod-security.kubernetes.io/warn"
 )
 
 func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
