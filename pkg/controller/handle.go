@@ -18,6 +18,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+const (
+	// PodSecurityModeEnforcing ...
+	PodSecurityModeEnforcing = "pod-security.kubernetes.io/enforce"
+	// PodSecurityModeWarn ...
+	PodSecurityModeWarn = "pod-security.kubernetes.io/warn"
+)
+
 func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 	ctx := context.Background()
 	if !Contains(c.config.AdminNamespaces, ns.Name) {
@@ -94,6 +101,11 @@ func handleLabels(ns *v1.Namespace, key string, labelValues string) string {
 	newValue := getDefaultValue(labelValues)
 	val, ok := ns.Labels[key]
 	if !ok {
+		_, ok2 := ns.Labels[PodSecurityModeEnforcing]
+		if key == PodSecurityModeWarn && ok2 {
+			log.Printf("enforce label exists in namespace %s ignoring warn label", ns.Name)
+			return ""
+		}
 		log.Printf("adding label %s with value %s to namespace %s", key, newValue, ns.Name)
 		return newValue
 	}
