@@ -69,7 +69,7 @@ spec:
           name: namespace-configuration
       containers:
       - name: namespace-controller
-        image: elisaoyj/namespace-controller:latest
+        image: quay.io/elisaoyj/namespace-controller:latest
         volumeMounts:
         - name: namespace-configuration
           mountPath: /code/config
@@ -86,21 +86,48 @@ metadata:
     app.kubernetes.io/name: namespace-controller
 data:
   config.yaml: |-
+    adminnamespaces:
+        - kube-system
     maintainers:
-    - team: DevOps
-      labels:
-        maintainer: kaas
-        foo: bar
-      namespaces:
-      - foo
-      - bar
-    - team: prod1
-      labels:
-        maintainer: prod1
-      namespaces:
-      - '.*-prod'
-    - team: dev1
-      labels:
-        maintainer: dev1
-      namespaces:
-      - '.*'
+        - team: DevOps
+          labels:
+            eventgroup: foo
+            kaas.elisa.fi/allow-cloud-meta: "true"
+            kaas.elisa.fi/ignore-runasuser: "true"
+            pod-security.kubernetes.io/audit: privileged
+            pod-security.kubernetes.io/enforce: privileged
+          namespaces:
+            - kube-system
+        - team: DevOps
+          labels:
+            eventgroup: foo
+            pod-security.kubernetes.io/audit: privileged
+            pod-security.kubernetes.io/enforce: privileged
+          namespaces:
+            - falco
+            - logging
+            - monitoring
+        - team: DevOps
+          labels:
+            eventgroup: foo
+            pod-security.kubernetes.io/audit: baseline
+            pod-security.kubernetes.io/enforce: baseline
+          namespaces:
+            - ingress-nginx-external
+            - ingress-nginx-internal
+        - team: DevOps
+          labels:
+            eventgroup: foo
+            pod-security.kubernetes.io/audit: restricted
+            pod-security.kubernetes.io/enforce: restricted
+          namespaces:
+            - ingress-watcher
+            - kube-node-lease
+            - kube-public
+        - team: AD_FOO_SRE
+          labels:
+            eventgroup: foo
+            pod-security.kubernetes.io/audit: restricted,baseline
+            pod-security.kubernetes.io/warn: restricted,baseline
+          namespaces:
+            - .*
