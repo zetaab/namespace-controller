@@ -151,6 +151,8 @@ func (c *Controller) patchNameSpace(ctx context.Context, ns *v1.Namespace, label
 		return err
 	}
 
+	log.Printf("patch payload %+v", patch)
+
 	pb, err := json.MarshalIndent(patch, "", "  ")
 	if err != nil {
 		return err
