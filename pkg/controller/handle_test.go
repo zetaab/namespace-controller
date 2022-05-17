@@ -1,10 +1,11 @@
 package controller
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -91,6 +92,8 @@ type handleTest struct {
 }
 
 func TestHandle(t *testing.T) {
+	ctx := context.Background()
+	var c *Controller
 	tests := []handleTest{
 		{
 			Name: "add new label",
@@ -160,7 +163,6 @@ func TestHandle(t *testing.T) {
 			Opt:    "bar,bar2",
 			Result: "bar",
 		},
-
 		{
 			Name: "AllowedValues not valid",
 			NS: &v1.Namespace{
@@ -175,9 +177,23 @@ func TestHandle(t *testing.T) {
 			Opt:    "restricted,baseline",
 			Result: "",
 		},
+		{
+			Name: "Clean warn",
+			NS: &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Labels: map[string]string{
+						"pod-security.kubernetes.io/warn": "restricted",
+					},
+				},
+			},
+			Key:    "pod-security.kubernetes.io/enforce",
+			Opt:    "restricted,baseline",
+			Result: "restricted",
+		},
 	}
 	for _, test := range tests {
-		result := handleLabels(test.NS, test.Key, test.Opt)
+		result := c.handleLabels(ctx, test.NS, test.Key, test.Opt)
 		assert.Equal(t, test.Result, result, "Failed test '%s'", test.Name)
 	}
 }

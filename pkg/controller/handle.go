@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattbaird/jsonpatch"
 	"gopkg.in/yaml.v2"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +83,7 @@ func (c *Controller) checkAndUpdate(ns *v1.Namespace) {
 		return
 	}
 	for labelKey, labelValue := range team.Labels {
-		newValue := handleLabels(ns, labelKey, labelValue)
+		newValue := c.handleLabels(ctx, ns, labelKey, labelValue)
 		if len(newValue) > 0 {
 			err := c.patchNameSpace(ctx, ns, labelKey, newValue)
 			if err != nil {
@@ -97,7 +97,17 @@ func getDefaultValue(labelValue string) string {
 	return strings.Split(labelValue, ",")[0]
 }
 
-func handleLabels(ns *v1.Namespace, key string, labelValues string) string {
+func (c *Controller) handleLabels(ctx context.Context, ns *v1.Namespace, key string, labelValues string) string {
+	if key == PodSecurityModeEnforcing {
+		log.Printf("enforce label exists in namespace %s ensure warn label does not exist", ns.Name)
+		if c != nil {
+			err := c.patchNameSpace(ctx, ns, PodSecurityModeWarn, "")
+			if err != nil {
+				log.Printf("patching failed %v", err)
+			}
+		}
+	}
+
 	newValue := getDefaultValue(labelValues)
 	val, ok := ns.Labels[key]
 	if !ok {
@@ -126,7 +136,10 @@ func (c *Controller) patchNameSpace(ctx context.Context, ns *v1.Namespace, label
 	if len(ns.Labels) == 0 {
 		ns.Labels = make(map[string]string)
 	}
-	ns.Labels[label] = value
+
+	if value != "" {
+		ns.Labels[label] = value
+	}
 
 	newJSON, err := json.Marshal(ns)
 	if err != nil {
